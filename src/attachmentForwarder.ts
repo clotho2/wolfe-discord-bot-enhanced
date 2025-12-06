@@ -1,5 +1,5 @@
 import { Client, Events } from "discord.js";
-import { LettaClient } from "@letta-ai/letta-client";
+import { GrokClient } from "./grokClient";
 import axios from "axios";
 
 // ===== CHUNKING UTILITIES (for long Letta responses) =====
@@ -293,7 +293,7 @@ export function registerAttachmentForwarder(client: Client) {
       }).format(now);
       const timestamp = `${weekday}, ${timeOnly}`;
       
-      const reply = await forwardImagesToLetta(urls, userId, userName, channelInfo, timestamp, userText, processingReply, msg);
+      const reply = await forwardImagesToGrok(urls, userId, userName, channelInfo, timestamp, userText, processingReply, msg);
       
       if (reply && reply.trim()) {
         // CHUNKING: Split long responses to avoid Discord's 2000 char limit
@@ -470,7 +470,7 @@ async function compressImage(buffer: Buffer, mediaType: string, index: number, t
   return { buffer: buf, mediaType };
 }
 
-async function forwardImagesToLetta(
+async function forwardImagesToGrok(
   urls: string[],
   userId: string,
   userName: string,
@@ -478,21 +478,16 @@ async function forwardImagesToLetta(
   timestamp: string,
   userText?: string,
   statusMessage: any = null,
-  discordMessage: any = null // 🔥 NEW: Direct access to Discord message for real-time sending
+  discordMessage: any = null // Direct access to Discord message for real-time sending
 ): Promise<string> {
-  const token = process.env.LETTA_API_KEY || process.env.LETTA_KEY || '';
-  const baseUrl = (process.env.LETTA_BASE_URL || process.env.LETTA_API || 'https://api.letta.com').replace(/\/$/, '');
-  const agentId = process.env.LETTA_AGENT_ID || process.env.AGENT_ID || '';
-  
-  if (!agentId || !token) {
-    throw new Error("LETTA_AGENT_ID and LETTA_API_KEY (or AGENT_ID/LETTA_KEY) must be set");
-  }
+  const baseUrl = process.env.GROK_BASE_URL || 'http://localhost:8091';
+  const sessionId = process.env.GROK_SESSION_ID || 'discord-bot';
 
-  const client = new LettaClient({ 
-    token, 
+  const grokClient = new GrokClient({
     baseUrl,
+    sessionId,
     timeout: REQUEST_TIMEOUT  // 90s timeout for image uploads
-  } as any);
+  });
 
   // 🔧 Direct base64 upload (URL upload had reliability issues)
   console.log(`📦 Processing ${urls.length} image(s) via base64 upload, hasText=${!!(userText && userText.trim())}`);
@@ -632,11 +627,40 @@ async function forwardImagesToLetta(
 ║ User: ${userName}
 ╚══════════════════════════════════════`);
       
-      // ✅ STREAMING API (wie gestern - funktioniert!)
-      const response: any = await (client as any).agents.messages.createStream(agentId, payloadB64 as any);
+      // ✅ Call Grok API with chat request (non-streaming for now)
+      const chatResponse = await grokClient.chat({
+        messages: payloadB64.messages,
+        session_id: sessionId,
+        media_data: payloadB64.messages[0]?.content[0]?.source?.data,
+        media_type: payloadB64.messages[0]?.content[0]?.source?.mediaType,
+      });
+
+      // Extract response
+      const text2 = chatResponse.message?.content || '';
+
+      // Send response to Discord
+      if (text2 && text2.trim()) {
+        const DISCORD_LIMIT = 1900;
+        if (text2.length > DISCORD_LIMIT) {
+          const chunks = chunkText(text2, DISCORD_LIMIT);
+          for (const chunk of chunks) {
+            await discordMessage.channel.send(chunk);
+            await new Promise(r => setTimeout(r, 500));
+          }
+        } else {
+          await discordMessage.channel.send(text2);
+        }
+      }
+
+      return text2;
+
+      /*
+       * OLD LETTA STREAMING CODE - commented out for now
+       * TODO: Update for Grok streaming API when needed
+       *
       console.log(`🔍 [DEBUG] Stream started, collecting chunks...`);
-      let text2 = '';
-      let hasSentViaToolCall = false; // 🔥 Track if we already sent via send_message tool call OR assistant_message
+      let text2_old = '';
+      let hasSentViaToolCall = false; // Track if we already sent via send_message tool call OR assistant_message
       
       // 🔥 NEW (Oct 24, 2025): Helper to send messages immediately to Discord
       const sendAsyncMessage = async (content: string) => {
@@ -781,13 +805,15 @@ async function forwardImagesToLetta(
         return "";
       }
       
-      console.log(`✅ [STREAM END] Returning collected text to Discord (${text2.length} chars)`);
-      return (note + (text2 || '')).trim();
+      console.log(`✅ [STREAM END] Returning collected text to Discord (${text2_old.length} chars)`);
+      return (note + (text2_old || '')).trim();
+      */  // End of commented old Letta code
+
     } catch (e: any) {
       const detail = (e?.body?.detail || e?.response?.data || e?.message || '').toString();
       const statusCode = e?.statusCode || e?.response?.status || 0;
-      console.error('[Letta] Base64 upload failed:', e instanceof Error ? e.message : e);
-      
+      console.error('[Grok] Image upload failed:', e instanceof Error ? e.message : e);
+
       // Provide specific error messages based on failure type
       if (/exceeds\s*5\s*MB/i.test(detail) || /payload.*large/i.test(detail)) {
         return "❌ Image(s) still too large even after compression (>5MB).\n💡 Tip: Please use smaller images (<2MB recommended).";
@@ -798,11 +824,11 @@ async function forwardImagesToLetta(
       } else if (/timeout|ETIMEDOUT/i.test(detail)) {
         return "❌ API timeout - processing took too long.\n💡 Please use smaller images or try later.";
       } else if (/network|ECONNREFUSED|ENOTFOUND/i.test(detail)) {
-        return "❌ Letta API unreachable.\n💡 Please try again later or contact admin.";
+        return "❌ Grok API unreachable.\n💡 Please try again later or contact admin.";
       } else if (statusCode === 502 || statusCode === 503 || /bad gateway|service unavailable/i.test(detail)) {
-        return "❌ Letta server having issues (502/503 error).\n💡 Their LLM backend is overloaded - please try again in 1-2 minutes.";
+        return "❌ Grok server having issues (502/503 error).\n💡 Their backend is overloaded - please try again in 1-2 minutes.";
       }
-      
-      throw e;
+
+      return `❌ Error processing image: ${detail}`;
     }
 }

@@ -7,8 +7,7 @@ require("dotenv/config");
 const express_1 = __importDefault(require("express"));
 const discord_js_1 = require("discord.js");
 const messages_1 = require("./messages");
-const attachmentForwarder_1 = require("./attachmentForwarder");
-const letta_client_1 = require("@letta-ai/letta-client");
+const grokClient_1 = require("./grokClient");
 const taskScheduler_1 = require("./taskScheduler");
 const youtubeTranscript_1 = require("./youtubeTranscript");
 const fileChunking_1 = require("./fileChunking");
@@ -199,8 +198,8 @@ client.on('error', (error) => {
 client.on('warn', (info) => {
     console.log(`⚠️  [Discord.js Warning] ${info}`);
 });
-// Register attachment forwarder
-(0, attachmentForwarder_1.registerAttachmentForwarder)(client);
+// Register attachment forwarder - DISABLED: TODO update for Grok API
+// registerAttachmentForwarder(client);
 // Discord Bot Ready Event
 client.once('ready', async () => {
     console.log(`🤖 Logged in as ${client.user?.tag}!`);
@@ -688,28 +687,16 @@ app.post('/api/midjourney/generate', (req, res) => {
 // ============================================
 // Health Check Endpoints
 // ============================================
-// Letta health check
-app.get('/tool/letta-health', (req, res) => {
+// Grok health check
+app.get('/tool/grok-health', (req, res) => {
     (async () => {
-        const baseUrl = (process.env.LETTA_BASE_URL || 'https://api.letta.com').replace(/\/$/, '');
-        const agentId = process.env.LETTA_AGENT_ID;
-        const token = process.env.LETTA_API_KEY;
-        if (!agentId || !token) {
-            res.status(400).json({ ok: false, error: 'Missing LETTA_AGENT_ID or LETTA_API_KEY' });
-            return;
-        }
-        const imageUrl = typeof req.query.image_url === 'string' ? req.query.image_url : undefined;
-        const lc = new letta_client_1.LettaClient({ token, baseUrl, timeout: 60000 });
-        const content = imageUrl
-            ? [
-                { type: 'image', source: { type: 'url', url: imageUrl } },
-                { type: 'text', text: 'Health check: describe this image.' }
-            ]
-            : [{ type: 'text', text: 'this is a Healthtest by Cursor' }];
+        const baseUrl = process.env.GROK_BASE_URL || 'http://localhost:8091';
+        const sessionId = process.env.GROK_SESSION_ID || 'discord-bot';
+        const grokClient = new grokClient_1.GrokClient({ baseUrl, sessionId });
         const t0 = Date.now();
-        await lc.agents.messages.create(agentId, { messages: [{ role: 'user', content }] });
+        const response = await grokClient.healthCheck();
         const dt = Date.now() - t0;
-        res.json({ ok: true, baseUrl, vision: !!imageUrl, latency_ms: dt });
+        res.json({ ok: true, baseUrl, sessionId, latency_ms: dt, health: response });
     })().catch((e) => {
         res.status(500).json({ ok: false, error: String(e?.message || e) });
     });
@@ -718,9 +705,14 @@ app.get('/tool/letta-health', (req, res) => {
 app.get('/health', (req, res) => {
     res.json({
         status: 'healthy',
-        service: 'Discord-Letta Bot',
+        service: 'Discord-Grok Bot',
         uptime: process.uptime(),
         discord: client.isReady() ? 'connected' : 'disconnected',
+        grok: {
+            baseUrl: process.env.GROK_BASE_URL || 'http://localhost:8091',
+            sessionId: process.env.GROK_SESSION_ID || 'discord-bot',
+            model: process.env.GROK_MODEL || 'grok-4-1-fast-reasoning',
+        },
         voice: 'elevenlabs',
         autonomous: ENABLE_AUTONOMOUS ? 'enabled' : 'disabled',
         timestamp: new Date().toISOString(),
