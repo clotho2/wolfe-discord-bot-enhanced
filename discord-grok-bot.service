@@ -13,9 +13,9 @@ WorkingDirectory=/opt/aicara/wolfe-discord-bot-enhanced
 # Environment file (contains all secrets)
 EnvironmentFile=/opt/aicara/wolfe-discord-bot-enhanced/.env
 
-# Start command - run node directly (bypasses npm issues)
+# Start command - run node directly (compiled JS is in src/ folder)
 # Make sure to run 'npm run build' before starting the service
-ExecStart=/root/.nvm/versions/node/v18.20.8/bin/node dist/server.js
+ExecStart=/root/.nvm/versions/node/v18.20.8/bin/node src/server.js
 
 # Restart policy
 Restart=always
