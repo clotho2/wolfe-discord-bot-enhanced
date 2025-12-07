@@ -25,6 +25,8 @@ const GROK_MODEL = process.env.GROK_MODEL || 'grok-4-1-fast-reasoning';
 const USE_SENDER_PREFIX = process.env.USE_SENDER_PREFIX === 'true';
 const SURFACE_ERRORS = process.env.SURFACE_ERRORS === 'true';
 const GROK_API_TIMEOUT_MS = parseInt(process.env.GROK_API_TIMEOUT_MS || '300000', 10);
+const TIMEZONE = process.env.TIMEZONE || 'America/New_York';
+const LOCALE = process.env.LOCALE || 'en-US';
 
 // Initialize Grok Client
 const grokClient = new GrokClient({
@@ -50,7 +52,7 @@ async function sendMessage(
   const message = customContent || originalMessage;
 
   // Generate current timestamp (configured timezone) for this message
-  const TIMEZONE = process.env.TIMEZONE || 'Europe/Berlin';
+  // Timezone is already defined at the top of the file
   let timestampString = '';
   try {
     const now = new Date();
@@ -58,7 +60,7 @@ async function sendMessage(
       throw new Error('Invalid system time');
     }
 
-    const dateFormatter = new Intl.DateTimeFormat('de-DE', {
+    const dateFormatter = new Intl.DateTimeFormat(LOCALE, {
       timeZone: TIMEZONE,
       weekday: 'short',
       day: '2-digit',

@@ -277,13 +277,14 @@ export function registerAttachmentForwarder(client: Client) {
       const channelInfo = msg.guild 
         ? `#${(msg.channel as any).name || 'unknown-channel'} (channel_id=${msg.channel.id})`
         : 'DM';
-      const TIMEZONE = process.env.TIMEZONE || 'Europe/Berlin';
+      const TIMEZONE = process.env.TIMEZONE || 'America/New_York';
+      const LOCALE = process.env.LOCALE || 'en-US';
       const now = new Date();
-      const weekday = new Intl.DateTimeFormat('de-DE', {
+      const weekday = new Intl.DateTimeFormat(LOCALE, {
         timeZone: TIMEZONE,
         weekday: 'short'
       }).format(now);
-      const timeOnly = new Intl.DateTimeFormat('de-DE', {
+      const timeOnly = new Intl.DateTimeFormat(LOCALE, {
         timeZone: TIMEZONE,
         day: '2-digit',
         month: '2-digit',

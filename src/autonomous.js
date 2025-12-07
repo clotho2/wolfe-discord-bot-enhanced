@@ -210,8 +210,9 @@ function formatTimestamp(timestamp) {
             return '';
         }
         // Format: "Mo, 20.11., 14:30" (Wochentag, Datum, Zeit)
-        const TIMEZONE = process.env.TIMEZONE || 'Europe/Berlin';
-        const dateFormatter = new Intl.DateTimeFormat('de-DE', {
+        const TIMEZONE = process.env.TIMEZONE || 'America/New_York';
+        const LOCALE = process.env.LOCALE || 'en-US';
+        const dateFormatter = new Intl.DateTimeFormat(LOCALE, {
             timeZone: TIMEZONE,
             weekday: 'short', // Mo, Di, Mi, etc.
             day: '2-digit',

@@ -106,16 +106,17 @@ const ENABLE_TIMER = process.env.ENABLE_TIMER === 'true';
 function getHeartbeatConfigForTime() {
     const now = new Date();
     // Get configured timezone time
-    const TIMEZONE = process.env.TIMEZONE || 'Europe/Berlin';
-    const berlinFormatter = new Intl.DateTimeFormat('de-DE', {
+    const TIMEZONE = process.env.TIMEZONE || 'America/New_York';
+    const LOCALE = process.env.LOCALE || 'en-US';
+    const dateFormatter = new Intl.DateTimeFormat(LOCALE, {
         timeZone: TIMEZONE,
         hour: 'numeric',
         hour12: false
     });
-    const parts = berlinFormatter.formatToParts(now);
+    const parts = dateFormatter.formatToParts(now);
     const hourPart = parts.find(p => p.type === 'hour');
     const hour = hourPart ? parseInt(hourPart.value, 10) : now.getUTCHours();
-    console.log(`🕐 Current Berlin time: ${hour}:00`);
+    console.log(`🕐 Current configured time: ${hour}:00 (${TIMEZONE})`);
     if (hour >= 7 && hour < 9) {
         // Morgen (7:00-9:00): Alle 30min, 50% Chance
         return { intervalMinutes: 30, firingProbability: 0.50, description: 'Morgen (Aufwach-Check)' };
