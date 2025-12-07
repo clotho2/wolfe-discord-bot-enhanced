@@ -13,8 +13,8 @@ WorkingDirectory=/opt/aicara/wolfe-discord-bot-enhanced
 # Environment file (contains all secrets)
 EnvironmentFile=/opt/aicara/wolfe-discord-bot-enhanced/.env
 
-# Start command - use full path to npm
-ExecStart=/opt/node22/bin/npm start
+# Start command - use full path to npm (NVM installation)
+ExecStart=/root/.nvm/versions/node/v18.20.8/bin/npm start
 
 # Restart policy
 Restart=always
