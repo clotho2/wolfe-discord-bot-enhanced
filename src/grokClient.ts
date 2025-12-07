@@ -126,6 +126,7 @@ export class GrokClient {
 
     const stream = response.data;
     let buffer = '';
+    let currentEvent = '';
 
     for await (const chunk of stream) {
       buffer += chunk.toString();
@@ -133,11 +134,15 @@ export class GrokClient {
       buffer = lines.pop() || '';
 
       for (const line of lines) {
-        if (!line.trim()) continue;
+        if (!line.trim()) {
+          // Empty line marks end of event - reset currentEvent
+          currentEvent = '';
+          continue;
+        }
 
         // Parse SSE format: "event: content\ndata: {...}"
         if (line.startsWith('event:')) {
-          const event = line.substring(6).trim();
+          currentEvent = line.substring(6).trim();
           continue;
         }
 
@@ -145,7 +150,11 @@ export class GrokClient {
           const data = line.substring(5).trim();
           try {
             const parsed = JSON.parse(data);
-            yield parsed;
+            // Yield object with both event and data
+            yield {
+              event: currentEvent as any,
+              data: parsed
+            };
           } catch (e) {
             console.error('Failed to parse SSE data:', data);
           }
