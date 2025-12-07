@@ -154,14 +154,12 @@ async function sendMessage(discordMessageObject, messageType, conversationContex
         for await (const chunk of grokClient.chatStream(request)) {
             console.log(`📦 [STREAM CHUNK] Event: ${chunk.event}`);
             if (chunk.event === 'thinking' && chunk.data) {
-                const content = typeof chunk.data === 'string' ? chunk.data : chunk.data.content || '';
+                const content = typeof chunk.data === 'string' ? chunk.data : (chunk.data.chunk || chunk.data.content || '');
                 console.log(`💭 [THINKING] ${content.substring(0, 100)}...`);
                 thinkingContent += content;
             }
             else if (chunk.event === 'content' && chunk.data) {
-                // Log the full chunk.data structure to see what fields are available
-                console.log(`🔍 [DEBUG] chunk.data structure:`, JSON.stringify(chunk.data, null, 2));
-                const content = typeof chunk.data === 'string' ? chunk.data : chunk.data.content || '';
+                const content = typeof chunk.data === 'string' ? chunk.data : (chunk.data.chunk || chunk.data.content || '');
                 console.log(`💬 [CONTENT] ${content.substring(0, 100)}...`);
                 agentMessageResponse += content;
             }
