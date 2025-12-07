@@ -378,6 +378,10 @@ async function startRandomEventTimer(): Promise<void> {
 
 // Handle messages
 client.on('messageCreate', async (message) => {
+  // 🔍 DEBUG: Log all incoming messages to diagnose channel filtering
+  console.log(`📨 [DEBUG] Message received: author=${message.author.username}, channel=${message.channel.id}, guild=${message.guild?.id || 'DM'}, content="${message.content.substring(0, 50)}..."`);
+  console.log(`📨 [DEBUG] Config: CHANNEL_ID="${CHANNEL_ID || 'UNSET'}", RESPOND_TO_MENTIONS=${RESPOND_TO_MENTIONS}, ENABLE_AUTONOMOUS=${ENABLE_AUTONOMOUS}`);
+
   // 🔒 AUTONOMOUS: Track ALL messages for context (EXCEPT our own bot messages to save credits!)
   if (ENABLE_AUTONOMOUS && client.user?.id && message.author.id !== client.user.id) {
     trackMessage(message, client.user.id);
@@ -402,9 +406,10 @@ client.on('messageCreate', async (message) => {
   
   // Filter channels if CHANNEL_ID is set, but ALWAYS allow DMs through
   if (CHANNEL_ID && message.guild && message.channel.id !== CHANNEL_ID) {
-    console.log(`📩 Ignoring message from other channels (only listening on channel=${CHANNEL_ID})...`);
+    console.log(`📩 [CHANNEL FILTER] Ignoring message from channel ${message.channel.id} (only listening on channel=${CHANNEL_ID})`);
     return;
   }
+  console.log(`✅ [CHANNEL FILTER] Passed channel filter check`);
   
   if (message.author.id === client.user?.id) {
     console.log(`📩 Ignoring message from myself (NOT sending to Letta - saves credits!)...`);
