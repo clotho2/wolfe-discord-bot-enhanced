@@ -22,6 +22,7 @@ export enum MessageType {
 const GROK_BASE_URL = process.env.GROK_BASE_URL || 'http://localhost:8091';
 const GROK_SESSION_ID = process.env.GROK_SESSION_ID || 'discord-bot';
 const GROK_MODEL = process.env.GROK_MODEL || 'grok-4-1-fast-reasoning';
+const GROK_MAX_TOKENS = parseInt(process.env.GROK_MAX_TOKENS || '8192', 10);  // Allow longer responses
 const USE_SENDER_PREFIX = process.env.USE_SENDER_PREFIX === 'true';
 const SURFACE_ERRORS = process.env.SURFACE_ERRORS === 'true';
 const GROK_API_TIMEOUT_MS = parseInt(process.env.GROK_API_TIMEOUT_MS || '300000', 10);
@@ -34,6 +35,7 @@ const grokClient = new GrokClient({
   sessionId: GROK_SESSION_ID,
   model: GROK_MODEL,
   timeout: GROK_API_TIMEOUT_MS,
+  maxTokens: GROK_MAX_TOKENS,  // Pass max tokens to client
 });
 
 /**
@@ -325,8 +327,16 @@ async function sendTimerMessage(channel: any): Promise<string> {
 
     const response = await grokClient.chat(request);
     const sendMessage = response.send_message !== false; // Default true for backward compatibility
-    const content = response.message?.content || '';
+    let content = response.message?.content || '';
     const toolCalls = response.tool_calls || [];
+
+    // TEMPORARY WORKAROUND: Strip <decision> block if substrate didn't remove it
+    // This should be fixed in substrate, but adding safety check here
+    const decisionBlockRegex = /<decision>[\s\S]*?<\/decision>/gi;
+    if (decisionBlockRegex.test(content)) {
+      console.warn('⚠️ Decision block found in message content - stripping it out (substrate should handle this)');
+      content = content.replace(decisionBlockRegex, '').trim();
+    }
 
     // Log tool usage for visibility
     if (toolCalls.length > 0) {
