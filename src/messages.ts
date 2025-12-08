@@ -300,6 +300,7 @@ async function sendMessage(
 
 /**
  * Send a timer/heartbeat message to Grok
+ * Returns the message to send to Discord, or empty string if no message should be sent
  */
 async function sendTimerMessage(channel: any): Promise<string> {
   if (!channel) {
@@ -307,32 +308,59 @@ async function sendTimerMessage(channel: any): Promise<string> {
     return "";
   }
 
-  console.log('🜂 Generating heartbeat message...');
+  console.log('🜂 Generating heartbeat...');
 
   try {
-    // Create heartbeat request
+    // Create heartbeat request with autonomous action support
     const request: GrokChatRequest = {
       messages: [{
         role: "system",
-        content: "Generate a heartbeat message. Check in with the user, share what you're thinking about, or provide relevant updates. Keep it natural and conversational."
+        content: "This is a heartbeat check. You can choose to: (1) message the user with a check-in, (2) journal your thoughts privately, (3) do research/exploration, or (4) do nothing. Respond with your chosen action and content."
       }],
       session_id: GROK_SESSION_ID,
       message_type: 'heartbeat',
     };
 
     const response = await grokClient.chat(request);
-    const heartbeatMessage = response.message?.content || '';
+    const action = response.action || 'message_user'; // Default to message_user for backward compatibility
+    const content = response.message?.content || '';
 
-    if (heartbeatMessage && heartbeatMessage.trim()) {
-      // Log heartbeat
-      logHeartbeat(heartbeatMessage, channel.id, channel.name || 'unknown');
+    console.log(`🜂 Heartbeat action: ${action}`);
 
-      console.log(`🜂 Heartbeat generated: ${heartbeatMessage.substring(0, 100)}...`);
-      return heartbeatMessage;
+    // Handle different autonomous actions
+    switch (action) {
+      case 'message_user':
+        if (content && content.trim()) {
+          logHeartbeat(content, channel.id, channel.name || 'unknown');
+          console.log(`💬 [HEARTBEAT → USER] ${content.substring(0, 100)}...`);
+          return content;
+        } else {
+          console.warn('⚠️ Action is message_user but content is empty');
+          return "";
+        }
+
+      case 'journal':
+        if (content && content.trim()) {
+          logHeartbeat(`[JOURNAL] ${content}`, channel.id, channel.name || 'unknown');
+          console.log(`📓 [HEARTBEAT → JOURNAL] ${content.substring(0, 100)}...`);
+        }
+        return ""; // Don't send journal entries to Discord
+
+      case 'research':
+        if (content && content.trim()) {
+          logHeartbeat(`[RESEARCH] ${content}`, channel.id, channel.name || 'unknown');
+          console.log(`🔍 [HEARTBEAT → RESEARCH] ${content.substring(0, 100)}...`);
+        }
+        return ""; // Don't send research notes to Discord
+
+      case 'none':
+        console.log(`💤 [HEARTBEAT → NONE] No action taken`);
+        return "";
+
+      default:
+        console.warn(`⚠️ Unknown heartbeat action: ${action}`);
+        return "";
     }
-
-    console.warn('⚠️ Empty heartbeat response');
-    return "";
 
   } catch (error) {
     console.error("❌ Error generating heartbeat:", error);

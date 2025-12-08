@@ -314,6 +314,9 @@ async function startRandomEventTimer() {
                     console.error("🜂 Error sending heartbeat message:", error);
                 }
             }
+            else if (msg === "" && channel) {
+                console.log("🜂 Heartbeat executed autonomous action (journal/research/none) - no message sent to Discord");
+            }
             else if (!channel) {
                 console.log("🜂 No CHANNEL_ID defined or channel not available; message not sent.");
             }

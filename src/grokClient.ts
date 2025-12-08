@@ -45,6 +45,13 @@ export interface GrokChatResponse {
   };
   session_id?: string;
   done: boolean;
+  // Autonomous action support (for heartbeats and autonomous behavior)
+  action?: 'message_user' | 'journal' | 'research' | 'none';
+  action_metadata?: {
+    target?: 'dm' | 'channel';
+    priority?: 'low' | 'normal' | 'high';
+    [key: string]: any;
+  };
 }
 
 export interface GrokStreamChunk {

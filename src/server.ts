@@ -355,7 +355,7 @@ async function startRandomEventTimer(): Promise<void> {
       
       // 💰 ONLY make API call if probability check passed!
       const msg = await sendTimerMessage(channel);
-      
+
       if (msg !== "" && channel) {
         try {
           await channel.send(msg);
@@ -363,6 +363,8 @@ async function startRandomEventTimer(): Promise<void> {
         } catch (error) {
           console.error("🜂 Error sending heartbeat message:", error);
         }
+      } else if (msg === "" && channel) {
+        console.log("🜂 Heartbeat executed autonomous action (journal/research/none) - no message sent to Discord");
       } else if (!channel) {
         console.log("🜂 No CHANNEL_ID defined or channel not available; message not sent.");
       }
