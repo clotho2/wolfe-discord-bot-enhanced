@@ -104,6 +104,8 @@ export class GrokClient {
       ...(request.media_type && { media_type: request.media_type }),
     };
 
+    console.log(`🔧 [GrokClient] Sending request: max_tokens=${payload.max_tokens}, model=${payload.model}, session=${payload.session_id}`);
+
     const response = await this.client.post('/ollama/api/chat', payload);
     return response.data;
   }
@@ -123,6 +125,8 @@ export class GrokClient {
       ...(request.media_data && { media_data: request.media_data }),
       ...(request.media_type && { media_type: request.media_type }),
     };
+
+    console.log(`🔧 [GrokClient] Sending streaming request: max_tokens=${payload.max_tokens}, model=${payload.model}, session=${payload.session_id}`);
 
     const response = await this.client.post('/ollama/api/chat/stream', payload, {
       responseType: 'stream',
