@@ -147,7 +147,9 @@ async function sendMessage(discordMessageObject, messageType, conversationContex
             messages: [grokMessage],
             session_id: GROK_SESSION_ID,
             message_type: messageType === MessageType.DM ? 'inbox' : 'inbox',
+            max_tokens: GROK_MAX_TOKENS, // Explicitly set max tokens
         };
+        console.log(`📊 Request config: max_tokens=${request.max_tokens}, model=${GROK_MODEL}, session=${GROK_SESSION_ID}`);
         let agentMessageResponse = '';
         let thinkingContent = '';
         const toolCalls = [];
@@ -246,7 +248,9 @@ async function sendTimerMessage(channel) {
                 }],
             session_id: GROK_SESSION_ID,
             message_type: 'system', // 'system' triggers autonomous mode in substrate
+            max_tokens: GROK_MAX_TOKENS, // Explicitly set max tokens
         };
+        console.log(`🜂 Heartbeat config: max_tokens=${request.max_tokens}`);
         const response = await grokClient.chat(request);
         const sendMessage = response.send_message !== false; // Default true for backward compatibility
         let content = response.message?.content || '';
@@ -302,6 +306,7 @@ async function sendTaskMessage(taskName, taskPrompt) {
                 }],
             session_id: GROK_SESSION_ID,
             message_type: 'task',
+            max_tokens: GROK_MAX_TOKENS, // Explicitly set max tokens
         };
         const response = await grokClient.chat(request);
         const taskResponse = response.message?.content || '';
