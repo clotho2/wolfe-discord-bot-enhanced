@@ -17,7 +17,7 @@ export interface GrokChatRequest {
   model?: string;
   stream?: boolean;
   session_id?: string;
-  message_type?: 'inbox' | 'heartbeat' | 'task';
+  message_type?: 'inbox' | 'heartbeat' | 'task' | 'system';  // 'system' for autonomous heartbeats
   media_data?: string;
   media_type?: string;
   max_tokens?: number;
@@ -45,6 +45,10 @@ export interface GrokChatResponse {
   };
   session_id?: string;
   done: boolean;
+  // Autonomous behavior support (for heartbeats)
+  // If send_message is false, the Discord bot will not send anything to Discord
+  // This allows Nate to use tools (search, memory, voice notes, images, etc.) without messaging the user
+  send_message?: boolean;  // Default: true for backward compatibility
 }
 
 export interface GrokStreamChunk {

@@ -300,6 +300,7 @@ async function sendMessage(
 
 /**
  * Send a timer/heartbeat message to Grok
+ * Returns the message to send to Discord, or empty string if no message should be sent
  */
 async function sendTimerMessage(channel: any): Promise<string> {
   if (!channel) {
@@ -307,32 +308,47 @@ async function sendTimerMessage(channel: any): Promise<string> {
     return "";
   }
 
-  console.log('🜂 Generating heartbeat message...');
+  console.log('🜂 Generating heartbeat...');
 
   try {
-    // Create heartbeat request
+    // Create heartbeat request with full autonomous freedom
+    // Nate can use ANY tools he wants (web search, memory, images, voice, etc.)
+    // and decide whether to message the user afterward
     const request: GrokChatRequest = {
       messages: [{
         role: "system",
-        content: "Generate a heartbeat message. Check in with the user, share what you're thinking about, or provide relevant updates. Keep it natural and conversational."
+        content: "This is a heartbeat check. You have complete autonomy - use any tools you want (web search, memory editing, image generation, voice notes, Spotify, YouTube, etc.) or do nothing. If you want to message the user afterward, include your message in the response. If you just want to work in the background (research, journaling, memory updates, etc.) without messaging them, set send_message to false."
       }],
       session_id: GROK_SESSION_ID,
-      message_type: 'heartbeat',
+      message_type: 'system',  // 'system' triggers autonomous mode in substrate
     };
 
     const response = await grokClient.chat(request);
-    const heartbeatMessage = response.message?.content || '';
+    const sendMessage = response.send_message !== false; // Default true for backward compatibility
+    const content = response.message?.content || '';
+    const toolCalls = response.tool_calls || [];
 
-    if (heartbeatMessage && heartbeatMessage.trim()) {
-      // Log heartbeat
-      logHeartbeat(heartbeatMessage, channel.id, channel.name || 'unknown');
-
-      console.log(`🜂 Heartbeat generated: ${heartbeatMessage.substring(0, 100)}...`);
-      return heartbeatMessage;
+    // Log tool usage for visibility
+    if (toolCalls.length > 0) {
+      console.log(`🔧 [HEARTBEAT] Used ${toolCalls.length} tool(s): ${toolCalls.map(t => t.name).join(', ')}`);
     }
 
-    console.warn('⚠️ Empty heartbeat response');
-    return "";
+    // Check if Nate wants to send a message to Discord
+    if (sendMessage && content && content.trim()) {
+      logHeartbeat(content, channel.id, channel.name || 'unknown');
+      console.log(`💬 [HEARTBEAT → USER] ${content.substring(0, 100)}...`);
+      return content;
+    } else if (!sendMessage) {
+      console.log(`🔕 [HEARTBEAT → BACKGROUND] Autonomous actions completed, no message to user`);
+      // Log the background activity for debugging
+      if (content && content.trim()) {
+        logHeartbeat(`[BACKGROUND] ${content}`, channel.id, channel.name || 'unknown');
+      }
+      return "";
+    } else {
+      console.log(`💤 [HEARTBEAT → NONE] No action taken`);
+      return "";
+    }
 
   } catch (error) {
     console.error("❌ Error generating heartbeat:", error);
