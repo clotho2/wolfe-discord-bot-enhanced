@@ -45,13 +45,10 @@ export interface GrokChatResponse {
   };
   session_id?: string;
   done: boolean;
-  // Autonomous action support (for heartbeats and autonomous behavior)
-  action?: 'message_user' | 'journal' | 'research' | 'none';
-  action_metadata?: {
-    target?: 'dm' | 'channel';
-    priority?: 'low' | 'normal' | 'high';
-    [key: string]: any;
-  };
+  // Autonomous behavior support (for heartbeats)
+  // If send_message is false, the Discord bot will not send anything to Discord
+  // This allows Nate to use tools (search, memory, voice notes, images, etc.) without messaging the user
+  send_message?: boolean;  // Default: true for backward compatibility
 }
 
 export interface GrokStreamChunk {
