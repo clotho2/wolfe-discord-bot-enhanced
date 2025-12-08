@@ -320,7 +320,7 @@ async function sendTimerMessage(channel: any): Promise<string> {
         content: "This is a heartbeat check. You have complete autonomy - use any tools you want (web search, memory editing, image generation, voice notes, Spotify, YouTube, etc.) or do nothing. If you want to message the user afterward, include your message in the response. If you just want to work in the background (research, journaling, memory updates, etc.) without messaging them, set send_message to false."
       }],
       session_id: GROK_SESSION_ID,
-      message_type: 'heartbeat',
+      message_type: 'system',  // 'system' triggers autonomous mode in substrate
     };
 
     const response = await grokClient.chat(request);

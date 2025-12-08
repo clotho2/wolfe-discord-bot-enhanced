@@ -17,7 +17,7 @@ export interface GrokChatRequest {
   model?: string;
   stream?: boolean;
   session_id?: string;
-  message_type?: 'inbox' | 'heartbeat' | 'task';
+  message_type?: 'inbox' | 'heartbeat' | 'task' | 'system';  // 'system' for autonomous heartbeats
   media_data?: string;
   media_type?: string;
   max_tokens?: number;
