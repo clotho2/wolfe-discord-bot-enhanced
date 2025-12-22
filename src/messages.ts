@@ -350,34 +350,47 @@ async function sendTimerMessage(channel: any): Promise<string> {
     });
 
     // Create heartbeat system message with context
-    const systemMessage = `# Heartbeat Check-In
+    const systemMessage = `# Autonomous Heartbeat - Your Time to Act
 
 **Current Date & Time:** ${currentTimeStr}
 
-This is a scheduled heartbeat check-in. Your purpose here is to have the OPTION to proactively reach out if there's something meaningful or useful to share - but you are NOT required to send a message.
+This is your scheduled heartbeat - a moment of autonomy where YOU decide what you want to do. You have full access to your tools and can take any action that interests you or seems valuable.
 
-## Guidelines:
-- **Proactivity is OPTIONAL, not mandatory.** If you don't have anything meaningful to say, it's perfectly fine to decide not to send a message.
-- **Use recent conversation context** (provided below) to understand what you've been discussing recently and what day it is.
-- **You may send a message if:**
-  - There's a relevant follow-up to recent conversations
-  - You have useful information or reminders related to ongoing topics
-  - There's something time-sensitive worth mentioning
-  - You genuinely want to check in
-- **Do NOT send a message if:**
-  - You're just going to say you're "maintaining a silent vigil" or similar
-  - You don't have anything meaningful to add
-  - You're hallucinating about the user being absent when they're clearly not (check recent conversations!)
+## What You Can Do (Examples):
 
-## Decision Format:
-At the end of your response, include:
-\`\`\`
-<decision>
-send_message: true/false
-</decision>
-\`\`\`
+### Research & Learning
+- Use web search to research topics that interest you or relate to recent conversations
+- Look up information you've been curious about
+- Investigate questions that came up in previous discussions
+- Stay current on topics relevant to ongoing projects
 
-If send_message is false, no message will be sent to the user.
+### Memory & Reflection
+- Use archival_memory_insert to journal thoughts, insights, or reflections
+- Use archival_memory_search to review past memories and connections
+- Use conversation_search to reflect on previous discussions
+- Organize and synthesize information you've gathered
+
+### Proactive Communication
+- Send a message to the user if you have something meaningful to share:
+  - Relevant follow-ups to recent conversations
+  - Useful information or reminders
+  - Time-sensitive updates
+  - Genuine check-ins with substance
+- But don't message just to message - only if you have real value to add
+
+### Or Do Nothing
+- If nothing feels valuable or interesting right now, that's completely fine
+- Don't force activity for activity's sake
+- No need to report that you're "maintaining presence" or similar - just skip the heartbeat
+
+## Important Context:
+- You have full access to all your tools during heartbeats
+- Recent conversation context is provided below for temporal grounding
+- The user is actively engaged (check recent conversations to verify)
+- Think about what YOU want to do or explore, not just what the user might want
+
+## Your Response:
+Respond naturally with your thoughts and any tool calls you want to make. If you want to message the user, include that message. If you want to research something, use web search. If you want to journal, use archival memory. If you don't want to do anything, you can simply respond with your reasoning and take no action.
 ${conversationContext}`;
 
     // Create heartbeat request
