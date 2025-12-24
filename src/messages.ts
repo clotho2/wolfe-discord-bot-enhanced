@@ -12,6 +12,76 @@ import {
   getRecentConversationTurns
 } from "./conversationLogger";
 
+/**
+ * 🧹 Strip raw tool call text from AI responses
+ * 
+ * Sometimes the substrate includes raw tool call syntax in the response message,
+ * which shouldn't be sent to Discord. This function strips out these patterns.
+ * 
+ * Pattern: tool_name\n{json} or tool_name{json}
+ * Examples:
+ *   - send_voice_message\n{"message": "..."}
+ *   - archival_memory_insert\n{"content": "..."}
+ *   - core_memory_append\n{"content": "...", "block_name": "..."}
+ */
+function stripToolCallText(content: string): string {
+  // Known tool names that might appear in responses
+  const toolNames = [
+    'send_voice_message',
+    'archival_memory_insert',
+    'archival_memory_search',
+    'conversation_search',
+    'core_memory_append',
+    'core_memory_replace',
+    'memory_insert',
+    'memory_replace',
+    'memory_rethink',
+    'web_search',
+    'fetch_webpage',
+    'discord_tool',
+    'rider_pi_tool',
+    'spotify_control',
+    'send_message_to_agent',
+    'send_message_to_agents_matching_tags',
+    'download_agent_file',
+  ];
+  
+  let result = content;
+  
+  // Build regex pattern for tool calls
+  // Pattern: tool_name followed by optional whitespace/newline and then a JSON object
+  for (const toolName of toolNames) {
+    // Match: toolName followed by optional whitespace, then { ... } JSON block
+    // The JSON block can contain nested objects and arrays
+    const pattern = new RegExp(
+      `${toolName}\\s*\\{[^{}]*(?:\\{[^{}]*\\}[^{}]*)*\\}`,
+      'gi'
+    );
+    result = result.replace(pattern, '');
+  }
+  
+  // Also strip any remaining orphaned tool names at the start of lines
+  const orphanedToolPattern = new RegExp(
+    `^(${toolNames.join('|')})\\s*$`,
+    'gim'
+  );
+  result = result.replace(orphanedToolPattern, '');
+  
+  // Clean up multiple consecutive newlines and trim
+  result = result.replace(/\n{3,}/g, '\n\n').trim();
+  
+  return result;
+}
+
+/**
+ * Check if content appears to be only tool calls (no actual message)
+ */
+function isOnlyToolCalls(content: string): boolean {
+  const stripped = stripToolCallText(content);
+  // If after stripping tool calls we have very little content, it was probably just tool calls
+  return stripped.length < 10 || /^[\s\n]*$/.test(stripped);
+}
+
 export enum MessageType {
   GENERIC = 0,
   MENTION = 1,
@@ -423,6 +493,22 @@ ${conversationContext}`;
     if (decisionBlockRegex.test(content)) {
       console.warn('⚠️ Decision block found in message content - stripping it out (substrate should handle this)');
       content = content.replace(decisionBlockRegex, '').trim();
+    }
+
+    // 🧹 Strip raw tool call text from response (substrate sometimes includes these)
+    // This prevents sending things like "send_voice_message{"message": "..."}" to Discord
+    const originalContent = content;
+    content = stripToolCallText(content);
+    if (content !== originalContent) {
+      console.log('🧹 [HEARTBEAT] Stripped raw tool call text from response');
+      console.log(`🧹 [HEARTBEAT] Original length: ${originalContent.length}, After strip: ${content.length}`);
+      
+      // If content was only tool calls, don't send anything to Discord
+      if (isOnlyToolCalls(originalContent)) {
+        console.log('🔕 [HEARTBEAT → TOOLS ONLY] Response contained only tool calls, not sending to Discord');
+        logHeartbeat(`[TOOLS EXECUTED] ${toolCalls.map(t => t.name).join(', ')}`, channel.id, channel.name || 'unknown');
+        return "";
+      }
     }
 
     // Log tool usage for visibility
