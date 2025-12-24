@@ -307,6 +307,25 @@ async function sendMessage(
 
     clearInterval(typingInterval);
 
+    // 🧹 Strip raw tool call text from response (substrate sometimes includes these in content)
+    // This prevents sending things like "send_voice_message{"message": "..."}" to Discord
+    const originalResponse = agentMessageResponse;
+    agentMessageResponse = stripToolCallText(agentMessageResponse);
+    if (agentMessageResponse !== originalResponse) {
+      console.log('🧹 [STREAM] Stripped raw tool call text from response');
+      console.log(`🧹 [STREAM] Original length: ${originalResponse.length}, After strip: ${agentMessageResponse.length}`);
+      
+      // If response was only tool calls, check if we should return empty
+      if (isOnlyToolCalls(originalResponse)) {
+        console.log('🔕 [STREAM] Response contained only tool calls, returning empty');
+        // Log the tools that were used
+        if (toolCalls.length > 0) {
+          console.log(`🔧 [STREAM] Tools executed: ${toolCalls.map(t => t.name).join(', ')}`);
+        }
+        return "";
+      }
+    }
+
     if (!agentMessageResponse || !agentMessageResponse.trim()) {
       console.warn('⚠️ Received empty response from Grok API');
       return SURFACE_ERRORS
