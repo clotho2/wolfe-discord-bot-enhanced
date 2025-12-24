@@ -14,23 +14,6 @@ ELEVENLABS_API_KEY = os.getenv("ELEVENLABS_API_KEY", "")
 ELEVENLABS_VOICE_ID = os.getenv("ELEVENLABS_VOICE_ID", "")
 ELEVENLABS_MODEL_ID = os.getenv("ELEVENLABS_MODEL_ID", "eleven_v3")  # Eleven v3 (alpha) - supports Audio Tags!
 
-# Validate configuration at startup
-def _check_config():
-    """Check if required environment variables are set"""
-    missing = []
-    if not DISCORD_BOT_TOKEN:
-        missing.append("DISCORD_BOT_TOKEN")
-    if not ELEVENLABS_API_KEY:
-        missing.append("ELEVENLABS_API_KEY")
-    if not ELEVENLABS_VOICE_ID:
-        missing.append("ELEVENLABS_VOICE_ID")
-    return missing
-
-MISSING_CONFIG = _check_config()
-if MISSING_CONFIG:
-    print(f"⚠️  [send_voice_message] WARNING: Missing environment variables: {', '.join(MISSING_CONFIG)}", flush=True)
-    print(f"⚠️  [send_voice_message] Voice messages will fail until these are configured!", flush=True)
-
 # Security: Input validation
 MAX_TEXT_LENGTH = 3000
 MAX_AUDIO_SIZE_MB = 25
@@ -42,9 +25,8 @@ DISCORD_UPLOAD_TIMEOUT_PER_MB = 10  # Additional 10 seconds per MB
 
 
 def send_voice_message(
-    text: Optional[str] = None,
-    message: Optional[str] = None,  # Alias for 'text' - AI models sometimes use this parameter name
-    target: str = "",
+    text: str,
+    target: str,
     target_type: str = "auto",
     voice_id: Optional[str] = None,
     model_id: Optional[str] = None,
@@ -60,7 +42,6 @@ def send_voice_message(
     Args:
         text: Der Text der in Sprache umgewandelt werden soll. Unterstützt Audio Tags für v3 Modell (z.B. [excited], [whispering]).
               Siehe ELEVENLABS_AUDIO_TAGS_GUIDE.md für vollständige Tag-Dokumentation.
-        message: Alias für 'text' - einige AI Modelle verwenden diesen Parameternamen
         target: Discord User ID (für DM) oder Channel ID (für Channel-Nachricht)
         target_type: "user" für DM, "channel" für Channel, oder "auto" für automatische Erkennung
         voice_id: Optional: ElevenLabs Voice ID (Standard: konfigurierte Stimme)
@@ -74,22 +55,6 @@ def send_voice_message(
     Returns:
         Dict mit Status, Nachrichten-Details und Audio-Infos
     """
-    
-    # Check configuration first - fail fast with clear error message
-    if MISSING_CONFIG:
-        error_msg = f"Voice message tool not configured. Missing environment variables: {', '.join(MISSING_CONFIG)}"
-        print(f"❌ [send_voice_message] {error_msg}", flush=True)
-        return {
-            "status": "error",
-            "message": error_msg,
-            "voice_url": None,
-            "duration": None
-        }
-    
-    # Handle 'message' alias for 'text' parameter (AI models sometimes use 'message' instead of 'text')
-    if text is None and message is not None:
-        text = message
-        print(f"ℹ️  Using 'message' parameter as 'text' (alias support)", flush=True)
     
     # Security: Input validation
     if not text or not isinstance(text, str):

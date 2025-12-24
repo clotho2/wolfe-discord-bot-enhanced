@@ -970,12 +970,14 @@ app.post('/api/send-voice-message', (req, res) => {
       }
 
       // Validate required parameters
-      const { text, target, target_type } = req.body;
+      // Accept both 'text' and 'message' as parameter names (substrate uses 'message')
+      const { text: textParam, message: messageParam, target, target_type } = req.body;
+      const text = textParam || messageParam;
 
       if (!text || typeof text !== 'string') {
         return res.status(400).json({
           status: 'error',
-          error: 'Missing or invalid required parameter: text'
+          error: 'Missing or invalid required parameter: text (or message)'
         });
       }
 
