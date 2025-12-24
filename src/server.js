@@ -848,9 +848,15 @@ app.post('/api/midjourney/generate', (req, res) => {
  */
 app.post('/api/send-voice-message', (req, res) => {
     (async () => {
+        const requestTime = new Date().toISOString();
+        console.log(`🎤 [Voice API] ════════════════════════════════════════════════════════`);
+        console.log(`🎤 [Voice API] 📥 INCOMING REQUEST at ${requestTime}`);
+        console.log(`🎤 [Voice API] Raw body keys: ${Object.keys(req.body || {}).join(', ')}`);
+        console.log(`🎤 [Voice API] Raw body: ${JSON.stringify(req.body).substring(0, 500)}`);
         try {
             // Check if ElevenLabs is configured
             if (!discordVoiceSender || !elevenLabsService) {
+                console.error(`🎤 [Voice API] ❌ Service not configured!`);
                 return res.status(503).json({
                     status: 'error',
                     error: 'Voice message service not configured (missing ELEVENLABS_API_KEY or ELEVENLABS_VOICE_ID)'
@@ -858,13 +864,16 @@ app.post('/api/send-voice-message', (req, res) => {
             }
             // Validate required parameters
             const { text, target, target_type } = req.body;
+            console.log(`🎤 [Voice API] Parsed params: text=${text ? `"${text.substring(0, 50)}..."` : 'MISSING'}, target=${target || 'MISSING'}, target_type=${target_type || 'auto'}`);
             if (!text || typeof text !== 'string') {
+                console.error(`🎤 [Voice API] ❌ Missing or invalid text parameter`);
                 return res.status(400).json({
                     status: 'error',
                     error: 'Missing or invalid required parameter: text'
                 });
             }
             if (!target || typeof target !== 'string') {
+                console.error(`🎤 [Voice API] ❌ Missing or invalid target parameter`);
                 return res.status(400).json({
                     status: 'error',
                     error: 'Missing or invalid required parameter: target'
@@ -872,28 +881,32 @@ app.post('/api/send-voice-message', (req, res) => {
             }
             // Validate text length
             if (text.length > 3000) {
+                console.error(`🎤 [Voice API] ❌ Text too long: ${text.length} chars`);
                 return res.status(400).json({
                     status: 'error',
                     error: `Text too long (${text.length} characters). Maximum is 3000 characters.`
                 });
             }
-            console.log(`🎤 [Voice API] ========================================`);
-            console.log(`🎤 [Voice API] Received voice message request!`);
+            console.log(`🎤 [Voice API] ✅ Validation passed`);
             console.log(`🎤 [Voice API] Text: "${text.substring(0, 100)}${text.length > 100 ? '...' : ''}"`);
             console.log(`🎤 [Voice API] Target: ${target}, Type: ${target_type || 'auto'}`);
             console.log(`🎤 [Voice API] Text length: ${text.length} chars`);
             // Determine target channel or DM
             let targetChannel;
             let isDM = false;
+            console.log(`🎤 [Voice API] 🎯 Resolving target: ${target} (type: ${target_type || 'auto'})`);
             if (target_type === 'user') {
                 // Explicit user - create DM
+                console.log(`🎤 [Voice API] Attempting to fetch user ${target}...`);
                 try {
                     const user = await client.users.fetch(target);
+                    console.log(`🎤 [Voice API] ✅ User found: ${user.username}#${user.discriminator} (${user.id})`);
                     targetChannel = await user.createDM();
                     isDM = true;
-                    console.log(`🎤 [Voice API] Using DM channel for user ${user.username}`);
+                    console.log(`🎤 [Voice API] ✅ DM channel created: ${targetChannel.id}`);
                 }
                 catch (error) {
+                    console.error(`🎤 [Voice API] ❌ Failed to create DM with user ${target}:`, error);
                     return res.status(404).json({
                         status: 'error',
                         error: `Failed to create DM with user ${target}: ${error instanceof Error ? error.message : String(error)}`
@@ -902,17 +915,20 @@ app.post('/api/send-voice-message', (req, res) => {
             }
             else if (target_type === 'channel') {
                 // Explicit channel - fetch channel
+                console.log(`🎤 [Voice API] Attempting to fetch channel ${target}...`);
                 try {
                     targetChannel = await client.channels.fetch(target);
                     if (!targetChannel || !('send' in targetChannel)) {
+                        console.error(`🎤 [Voice API] ❌ Channel ${target} not found or not a text channel`);
                         return res.status(404).json({
                             status: 'error',
                             error: `Channel ${target} not found or is not a text channel`
                         });
                     }
-                    console.log(`🎤 [Voice API] Using channel ${targetChannel.name || target}`);
+                    console.log(`🎤 [Voice API] ✅ Channel found: ${targetChannel.name || target}`);
                 }
                 catch (error) {
+                    console.error(`🎤 [Voice API] ❌ Failed to fetch channel ${target}:`, error);
                     return res.status(404).json({
                         status: 'error',
                         error: `Failed to fetch channel ${target}: ${error instanceof Error ? error.message : String(error)}`
@@ -921,27 +937,31 @@ app.post('/api/send-voice-message', (req, res) => {
             }
             else {
                 // Auto-detect: try user first, then channel
-                // Discord IDs are indistinguishable, so we have to try both
+                console.log(`🎤 [Voice API] Auto-detecting target type...`);
                 try {
+                    console.log(`🎤 [Voice API] Trying as user first...`);
                     const user = await client.users.fetch(target);
+                    console.log(`🎤 [Voice API] ✅ User found: ${user.username}#${user.discriminator} (${user.id})`);
                     targetChannel = await user.createDM();
                     isDM = true;
-                    console.log(`🎤 [Voice API] Auto-detected as user DM for ${user.username}`);
+                    console.log(`🎤 [Voice API] ✅ DM channel created: ${targetChannel.id}`);
                 }
                 catch (userError) {
                     // Not a user, try as channel
-                    console.log(`🎤 [Voice API] Not a user, trying as channel...`);
+                    console.log(`🎤 [Voice API] Not a user (${userError instanceof Error ? userError.message : String(userError)}), trying as channel...`);
                     try {
                         targetChannel = await client.channels.fetch(target);
                         if (!targetChannel || !('send' in targetChannel)) {
+                            console.error(`🎤 [Voice API] ❌ Target ${target} is neither a valid user nor a text channel`);
                             return res.status(404).json({
                                 status: 'error',
                                 error: `Target ${target} is neither a valid user nor a text channel`
                             });
                         }
-                        console.log(`🎤 [Voice API] Auto-detected as channel ${targetChannel.name || target}`);
+                        console.log(`🎤 [Voice API] ✅ Channel found: ${targetChannel.name || target}`);
                     }
                     catch (channelError) {
+                        console.error(`🎤 [Voice API] ❌ Failed to resolve target ${target} as user or channel`);
                         return res.status(404).json({
                             status: 'error',
                             error: `Failed to resolve target ${target} as user or channel. User error: ${userError instanceof Error ? userError.message : String(userError)}. Channel error: ${channelError instanceof Error ? channelError.message : String(channelError)}`
@@ -950,6 +970,8 @@ app.post('/api/send-voice-message', (req, res) => {
                 }
             }
             // Send voice message
+            console.log(`🎤 [Voice API] 🎙️ Generating voice message via ElevenLabs...`);
+            const voiceStartTime = Date.now();
             const result = await discordVoiceSender.sendVoiceMessage({
                 text,
                 target: targetChannel,
@@ -961,8 +983,16 @@ app.post('/api/send-voice-message', (req, res) => {
                 useSpeakerBoost: req.body.use_speaker_boost,
                 replyToMessageId: req.body.reply_to_message_id
             });
+            const voiceElapsedTime = Date.now() - voiceStartTime;
+            console.log(`🎤 [Voice API] Voice generation + send took ${voiceElapsedTime}ms`);
+            console.log(`🎤 [Voice API] Result: success=${result.success}, messageId=${result.messageId}, audioSize=${result.audioSize}, error=${result.error}`);
             if (result.success) {
-                console.log(`✅ [Voice API] Voice message sent successfully: message_id=${result.messageId}`);
+                console.log(`🎤 [Voice API] ════════════════════════════════════════════════════════`);
+                console.log(`🎤 [Voice API] ✅ SUCCESS! Voice message sent to ${isDM ? 'DM' : 'channel'}`);
+                console.log(`🎤 [Voice API]    Message ID: ${result.messageId}`);
+                console.log(`🎤 [Voice API]    Audio size: ${result.audioSize} bytes`);
+                console.log(`🎤 [Voice API]    Total time: ${voiceElapsedTime}ms`);
+                console.log(`🎤 [Voice API] ════════════════════════════════════════════════════════`);
                 return res.json({
                     status: 'success',
                     message: 'Voice message sent successfully',
@@ -977,7 +1007,11 @@ app.post('/api/send-voice-message', (req, res) => {
                 });
             }
             else {
-                console.error(`❌ [Voice API] Failed to send voice message: ${result.error}`);
+                console.log(`🎤 [Voice API] ════════════════════════════════════════════════════════`);
+                console.error(`🎤 [Voice API] ❌ FAILED to send voice message!`);
+                console.error(`🎤 [Voice API]    Error: ${result.error}`);
+                console.error(`🎤 [Voice API]    Duration: ${result.duration}ms`);
+                console.log(`🎤 [Voice API] ════════════════════════════════════════════════════════`);
                 return res.status(500).json({
                     status: 'error',
                     error: result.error || 'Unknown error occurred while sending voice message'
@@ -985,14 +1019,21 @@ app.post('/api/send-voice-message', (req, res) => {
             }
         }
         catch (error) {
-            console.error('❌ [Voice API] Unexpected error:', error);
+            console.log(`🎤 [Voice API] ════════════════════════════════════════════════════════`);
+            console.error(`🎤 [Voice API] ❌ EXCEPTION in voice API handler!`);
+            console.error(`🎤 [Voice API]    Error: ${error.message || String(error)}`);
+            console.error(`🎤 [Voice API]    Stack: ${error.stack || 'no stack'}`);
+            console.log(`🎤 [Voice API] ════════════════════════════════════════════════════════`);
             return res.status(500).json({
                 status: 'error',
                 error: error.message || String(error)
             });
         }
     })().catch((e) => {
-        console.error('❌ [Voice API] Uncaught error:', e);
+        console.log(`🎤 [Voice API] ════════════════════════════════════════════════════════`);
+        console.error(`🎤 [Voice API] ❌ UNCAUGHT ERROR in voice API!`);
+        console.error(`🎤 [Voice API]    Error: ${e?.message || String(e)}`);
+        console.log(`🎤 [Voice API] ════════════════════════════════════════════════════════`);
         res.status(500).json({ status: 'error', error: String(e?.message || e) });
     });
 });
