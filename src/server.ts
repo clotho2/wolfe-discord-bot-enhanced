@@ -452,12 +452,6 @@ client.on('messageCreate', async (message) => {
     trackMessage(message, client.user.id);
   }
 
-  // Skip processing messages from the bot itself (before ANY other processing)
-  if (message.author.id === client.user?.id) {
-    console.log(`📩 Ignoring message from myself (NOT sending to substrate - saves credits!)...`);
-    return;
-  }
-
   // Let the attachment forwarder handle image attachments
   if (message.attachments?.size) {
     for (const [, att] of message.attachments) {
@@ -470,8 +464,8 @@ client.on('messageCreate', async (message) => {
 
   // 🎤 VOICE NOTE TRANSCRIPTION (Dec 2025)
   // Check for voice/audio attachments and transcribe them
-  // ONLY transcribe voice notes from USERS, not from the bot itself
-  if (voiceTranscriptionService && message.attachments?.size) {
+  // ONLY transcribe voice notes from USERS, not from the bot itself (checked later)
+  if (voiceTranscriptionService && message.attachments?.size && message.author.id !== client.user?.id) {
     for (const [, att] of message.attachments) {
       const ct = (att as any).contentType || (att as any).content_type || '';
       const fileName = (att as any).name || '';
@@ -539,7 +533,12 @@ client.on('messageCreate', async (message) => {
     return;
   }
   console.log(`✅ [CHANNEL FILTER] Passed channel filter check`);
-  
+
+  if (message.author.id === client.user?.id) {
+    console.log(`📩 Ignoring message from myself (NOT sending to substrate - saves credits!)...`);
+    return;
+  }
+
   // 🛠️ ADMIN COMMAND HANDLER (Oct 16, 2025)
   // CRITICAL: Check BEFORE autonomous mode to prevent blocking!
   // Admin commands should ALWAYS work, even with autonomous mode enabled
