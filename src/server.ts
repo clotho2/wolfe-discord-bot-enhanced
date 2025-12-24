@@ -970,14 +970,12 @@ app.post('/api/send-voice-message', (req, res) => {
       }
 
       // Validate required parameters
-      // Accept both 'text' and 'message' as parameter names (substrate uses 'message')
-      const { text: textParam, message: messageParam, target, target_type } = req.body;
-      const text = textParam || messageParam;
+      const { text, target, target_type } = req.body;
 
       if (!text || typeof text !== 'string') {
         return res.status(400).json({
           status: 'error',
-          error: 'Missing or invalid required parameter: text (or message)'
+          error: 'Missing or invalid required parameter: text'
         });
       }
 
@@ -996,7 +994,11 @@ app.post('/api/send-voice-message', (req, res) => {
         });
       }
 
-      console.log(`🎤 [Voice API] Received request: text="${text.substring(0, 50)}...", target=${target}, target_type=${target_type || 'auto'}`);
+      console.log(`🎤 [Voice API] ========================================`);
+      console.log(`🎤 [Voice API] Received voice message request!`);
+      console.log(`🎤 [Voice API] Text: "${text.substring(0, 100)}${text.length > 100 ? '...' : ''}"`);
+      console.log(`🎤 [Voice API] Target: ${target}, Type: ${target_type || 'auto'}`);
+      console.log(`🎤 [Voice API] Text length: ${text.length} chars`);
 
       // Determine target channel or DM
       let targetChannel: any;
@@ -1082,6 +1084,9 @@ app.post('/api/send-voice-message', (req, res) => {
           message_id: result.messageId,
           audio_size_bytes: result.audioSize,
           generation_time_ms: result.duration,
+          // These fields are expected by the substrate's send_voice_message tool
+          voice_url: null,  // Discord attachments don't have direct URLs accessible this way
+          duration: result.duration,  // Alias for generation_time_ms (substrate expects this name)
           target: target,
           target_type: isDM ? 'dm' : 'channel'
         });
