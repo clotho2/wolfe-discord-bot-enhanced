@@ -294,7 +294,7 @@ async function sendMessage(
       if (errorMessage.includes('timeout')) {
         return "⚠️ **Timeout Error**\n> The AI service took too long to respond. Please try again!";
       } else if (errorMessage.includes('ECONNREFUSED') || errorMessage.includes('ENOTFOUND')) {
-        return "⚠️ **Connection Error**\n> Cannot connect to the AI service. Please check if nate_api_substrate is running!";
+        return "⚠️ **Connection Error**\n> Cannot connect to the AI service. Please check if llm_api_substrate is running!";
       } else {
         return `⚠️ **Error**\n> ${errorMessage}\n\nPlease try again or contact support if the issue persists.`;
       }
@@ -430,7 +430,7 @@ ${conversationContext}`;
       console.log(`🔧 [HEARTBEAT] Used ${toolCalls.length} tool(s): ${toolCalls.map(t => t.name).join(', ')}`);
     }
 
-    // Check if Nate wants to send a message to Discord
+    // Check if the AI wants to send a message to Discord
     if (sendMessage && content && content.trim()) {
       logHeartbeat(content, channel.id, channel.name || 'unknown');
       console.log(`💬 [HEARTBEAT → USER] ${content.substring(0, 100)}...`);

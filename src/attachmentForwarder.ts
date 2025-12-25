@@ -140,7 +140,7 @@ function extractAssistantText(ns: any): string {
 }
 
 /**
- * Registers a listener that forwards image attachments to Grok API (via nate_api_substrate)
+ * Registers a listener that forwards image attachments to Grok API (via llm_api_substrate)
  * and replies with the agent response in the same thread.
  */
 export function registerAttachmentForwarder(client: Client) {
@@ -605,10 +605,10 @@ async function forwardImagesToGrok(
         : `${contextPrefix} Describe the image(s).`;
 
       // Extract base64 strings from the image objects
-      // nate_api_substrate uses Ollama-style API format (images as array of base64 strings)
+      // llm_api_substrate uses Ollama-style API format (images as array of base64 strings)
       const base64Strings = base64Images.map((img: any) => img.source.data);
 
-      // ✅ Build request payload using nate_api_substrate's API format
+      // ✅ Build request payload using llm_api_substrate's API format
       // Format: images array + content string (Ollama-style specification)
       const payload: any = {
         messages: [
@@ -620,7 +620,7 @@ async function forwardImagesToGrok(
         ]
       };
 
-      console.log(`🔍 [DEBUG] Payload built, sending to nate_api_substrate with streaming...`);
+      console.log(`🔍 [DEBUG] Payload built, sending to llm_api_substrate with streaming...`);
 
       // 📊 CREDIT TRACKING: Log image attachment call
       console.log(`

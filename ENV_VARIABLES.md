@@ -9,7 +9,7 @@ Copy these to your `.env` file and fill in your values.
 
 ## 🔴 REQUIRED - Core Functionality
 
-### Grok API (via nate_api_substrate)
+### Grok API (via llm_api_substrate)
 ```bash
 GROK_BASE_URL=http://localhost:8091
 GROK_SESSION_ID=discord-bot
@@ -203,7 +203,7 @@ PORT=3001
 ## 📝 Example `.env` File
 
 ```bash
-# Core - Grok API (via nate_api_substrate)
+# Core - Grok API (via llm_api_substrate)
 GROK_BASE_URL=http://localhost:8091
 GROK_SESSION_ID=discord-bot
 GROK_MODEL=grok-4-1-fast-reasoning

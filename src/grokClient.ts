@@ -1,9 +1,9 @@
 import axios, { AxiosInstance } from 'axios';
 
 /**
- * Grok API Client for nate_api_substrate
+ * Grok API Client for llm_api_substrate
  *
- * Provides interface to communicate with nate_api_substrate which uses Grok 4.1 API
+ * Provides interface to communicate with llm_api_substrate which uses Grok 4.1 API
  * Compatible with Ollama API format for chat endpoints
  */
 
@@ -47,7 +47,7 @@ export interface GrokChatResponse {
   done: boolean;
   // Autonomous behavior support (for heartbeats)
   // If send_message is false, the Discord bot will not send anything to Discord
-  // This allows Nate to use tools (search, memory, voice notes, images, etc.) without messaging the user
+  // This allows the AI to use tools (search, memory, voice notes, images, etc.) without messaging the user
   send_message?: boolean;  // Default: true for backward compatibility
 }
 

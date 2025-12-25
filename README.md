@@ -1,6 +1,6 @@
 # 🤖 Discord AI Bot (Grok & Ollama Cloud)
 
-A powerful, autonomous Discord bot powered by [xAI Grok](https://x.ai/) or [Ollama Cloud](https://ollama.com/) via [nate_api_substrate](https://github.com/clotho2/nate_api_substrate), featuring memory management, scheduled tasks, voice messages, Spotify integration, and more.
+A powerful, autonomous Discord bot powered by [xAI Grok](https://x.ai/) or [Ollama Cloud](https://ollama.com/) via [llm_api_substrate](https://github.com/yourusername/llm_api_substrate), featuring memory management, scheduled tasks, voice messages, Spotify integration, and more.
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.9-blue.svg)](https://www.typescriptlang.org/)
@@ -14,12 +14,12 @@ A powerful, autonomous Discord bot powered by [xAI Grok](https://x.ai/) or [Olla
 - **Multiple Model Support**: Choose between xAI Grok or Ollama Cloud models
   - **Grok**: grok-4-1-fast-reasoning, grok-4-1-thinking
   - **Ollama Cloud**: kimi-k2-thinking:cloud (128K context), deepseek-r1-distill-qwen:cloud, and more
-- **Conversational Memory**: Stateful conversations with persistent memory via nate_api_substrate
+- **Conversational Memory**: Stateful conversations with persistent memory via llm_api_substrate
 - **Context-Aware Responses**: AI remembers past conversations and user preferences
 - **Streaming Responses**: Real-time message streaming with Server-Sent Events (SSE)
 - **Tool Calling**: Extensible tool system for Discord operations, web search, Spotify control, and more
 - **Advanced Reasoning**: Support for reasoning models (Grok 4.1, Kimi K2, DeepSeek R1)
-- **Multimodal Support**: Image analysis with base64 encoding via nate_api_substrate
+- **Multimodal Support**: Image analysis with base64 encoding via llm_api_substrate
 
 ### 📅 **Autonomous Task Scheduling**
 - **Smart Scheduler**: Create recurring tasks (hourly, daily, weekly, monthly)
@@ -63,7 +63,7 @@ A powerful, autonomous Discord bot powered by [xAI Grok](https://x.ai/) or [Olla
 - **Node.js** 18+ and npm
 - **Python** 3.8+ (for Python tools)
 - **Discord Bot Token** ([Create a bot](https://discord.com/developers/applications))
-- **nate_api_substrate** running locally or on a server ([Setup guide](https://github.com/clotho2/nate_api_substrate))
+- **llm_api_substrate** running locally or on a server ([Setup guide](https://github.com/yourusername/llm_api_substrate))
 - **xAI API Key** for Grok 4.1 ([Get API access](https://x.ai/))
 
 ### Installation
@@ -80,11 +80,11 @@ A powerful, autonomous Discord bot powered by [xAI Grok](https://x.ai/) or [Olla
    pip install -r requirements.txt  # If you have Python tools
    ```
 
-3. **Set up nate_api_substrate**
+3. **Set up llm_api_substrate**
    ```bash
-   # Clone and set up nate_api_substrate
-   git clone https://github.com/clotho2/nate_api_substrate.git
-   cd nate_api_substrate
+   # Clone and set up llm_api_substrate
+   git clone https://github.com/yourusername/llm_api_substrate.git
+   cd llm_api_substrate
    # Follow setup instructions in the repository
    # Make sure it's running on http://localhost:8091 (default)
    ```
@@ -116,7 +116,7 @@ A powerful, autonomous Discord bot powered by [xAI Grok](https://x.ai/) or [Olla
 Create a `.env` file in the project root with at least these values:
 
 ```bash
-# Grok API (via nate_api_substrate)
+# Grok API (via llm_api_substrate)
 GROK_BASE_URL=http://localhost:8091
 GROK_SESSION_ID=discord-bot
 GROK_MODEL=grok-4-1-fast-reasoning
@@ -238,7 +238,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 ## 🙏 Acknowledgments
 
 - **[xAI Grok 4.1](https://x.ai/)** - Advanced AI reasoning model
-- **[nate_api_substrate](https://github.com/clotho2/nate_api_substrate)** - AI consciousness framework with memory management
+- **[llm_api_substrate](https://github.com/yourusername/llm_api_substrate)** - AI consciousness framework with memory management
 - **[Discord.js](https://discord.js.org)** - Powerful Discord API library
 - **[ElevenLabs](https://elevenlabs.io)** - High-quality text-to-speech
 - **[Spotify Web API](https://developer.spotify.com/documentation/web-api)** - Music integration

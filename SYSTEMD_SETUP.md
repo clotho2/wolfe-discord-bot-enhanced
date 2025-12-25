@@ -22,22 +22,22 @@ User=your_username
 Group=your_username
 
 # Change to the actual path where the bot is located
-WorkingDirectory=/home/your_username/wolfe-discord-bot-enhanced
+WorkingDirectory=/home/your_username/discord-ai-bot
 
 # Update the path to your .env file
-EnvironmentFile=/home/your_username/wolfe-discord-bot-enhanced/.env
+EnvironmentFile=/home/your_username/discord-ai-bot/.env
 
 # Update the log directory path
-ReadWritePaths=/home/your_username/wolfe-discord-bot-enhanced/logs
+ReadWritePaths=/home/your_username/discord-ai-bot/logs
 ```
 
 **Example for user 'ubuntu':**
 ```bash
 User=ubuntu
 Group=ubuntu
-WorkingDirectory=/home/ubuntu/wolfe-discord-bot-enhanced
-EnvironmentFile=/home/ubuntu/wolfe-discord-bot-enhanced/.env
-ReadWritePaths=/home/ubuntu/wolfe-discord-bot-enhanced/logs
+WorkingDirectory=/home/ubuntu/discord-ai-bot
+EnvironmentFile=/home/ubuntu/discord-ai-bot/.env
+ReadWritePaths=/home/ubuntu/discord-ai-bot/logs
 ```
 
 ### 2. Copy Service File to Systemd Directory
@@ -122,7 +122,7 @@ sudo systemctl disable discord-grok-bot
 
 4. **Test the bot manually:**
    ```bash
-   cd /path/to/wolfe-discord-bot-enhanced
+   cd /path/to/discord-ai-bot
    npm start
    ```
 
@@ -141,7 +141,7 @@ sudo systemctl disable discord-grok-bot
 - Check that `node_modules` directory exists
 
 **Bot starts but crashes**
-- Check if nate_api_substrate is running: `curl http://localhost:8091/api/health`
+- Check if llm_api_substrate is running: `curl http://localhost:8091/api/health`
 - Verify environment variables in `.env` are correct
 - Check logs: `sudo journalctl -u discord-grok-bot -n 100`
 
@@ -155,7 +155,7 @@ sudo systemctl show discord-grok-bot --property=Environment
 
 1. **Protect your .env file:**
    ```bash
-   chmod 600 /path/to/wolfe-discord-bot-enhanced/.env
+   chmod 600 /path/to/discord-ai-bot/.env
    ```
 
 2. **Limit service permissions:**
@@ -179,7 +179,7 @@ When you update the bot code:
 sudo systemctl stop discord-grok-bot
 
 # Pull updates
-cd /path/to/wolfe-discord-bot-enhanced
+cd /path/to/discord-ai-bot
 git pull
 
 # Install dependencies if needed

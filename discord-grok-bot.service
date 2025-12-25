@@ -1,6 +1,6 @@
 [Unit]
 Description=Discord Grok Bot
-Documentation=https://github.com/clotho2/wolfe-discord-bot-enhanced
+Documentation=https://github.com/yourusername/discord-ai-bot
 After=network-online.target
 Wants=network-online.target
 
@@ -8,10 +8,10 @@ Wants=network-online.target
 Type=simple
 User=root
 Group=root
-WorkingDirectory=/opt/aicara/wolfe-discord-bot-enhanced
+WorkingDirectory=/opt/discord-ai-bot
 
 # Environment file (contains all secrets)
-EnvironmentFile=/opt/aicara/wolfe-discord-bot-enhanced/.env
+EnvironmentFile=/opt/discord-ai-bot/.env
 
 # Start command - run node directly (compiled JS is in src/ folder)
 # Make sure to run 'npm run build' before starting the service
@@ -33,7 +33,7 @@ NoNewPrivileges=true
 PrivateTmp=true
 # ProtectSystem=strict  # Disabled - can cause NAMESPACE errors
 # ProtectHome=read-only  # Disabled - can cause NAMESPACE errors
-# ReadWritePaths=/opt/aicara/wolfe-discord-bot-enhanced/logs  # Disabled - logs will use journal
+# ReadWritePaths=/opt/discord-ai-bot/logs  # Disabled - logs will use journal
 
 # Logging
 StandardOutput=journal
