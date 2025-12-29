@@ -73,7 +73,7 @@ export class GrokClient {
     this.config = {
       baseUrl: config.baseUrl,
       sessionId: config.sessionId || 'discord-bot',
-      model: config.model || 'grok-4-1-fast-reasoning',
+      model: config.model || 'mistralai/mistral-large-2512',
       timeout: config.timeout || 300000, // 5 minutes default
       maxTokens: config.maxTokens || 4096,
       temperature: config.temperature || 0.7,

@@ -483,10 +483,12 @@ async function forwardImagesToGrok(
 ): Promise<string> {
   const baseUrl = process.env.GROK_BASE_URL || 'http://localhost:8091';
   const sessionId = process.env.GROK_SESSION_ID || 'discord-bot';
+  const model = process.env.GROK_MODEL;  // Use same model as text messages
 
   const grokClient = new GrokClient({
     baseUrl,
     sessionId,
+    model,  // Pass model from env var (ensures consistency with text messages)
     timeout: REQUEST_TIMEOUT  // 90s timeout for image uploads
   });
 
