@@ -315,28 +315,38 @@ client.once('ready', async () => {
 async function processAndSendMessage(message: any, messageType: MessageType, conversationContext: string | null = null, customContent: string | null = null): Promise<void> {
   try {
     const msg = await sendMessage(message, messageType, conversationContext, customContent);
-    
+
     if (msg !== "") {
       // 🔒 Record that bot replied (for pingpong tracking)
       if (ENABLE_AUTONOMOUS && client.user?.id) {
-        const wasFarewell = msg.toLowerCase().includes('gotta go') || 
+        const wasFarewell = msg.toLowerCase().includes('gotta go') ||
                            msg.toLowerCase().includes('catch you later') ||
                            msg.toLowerCase().includes('step away');
         recordBotReply(message.channel.id, client.user?.id || 'unknown', wasFarewell);
       }
-      
+
       if (msg.length <= 1900) {
-        await message.reply(msg);
+        // For DMs, send directly instead of replying (avoids routing issues)
+        if (message.channel.type === 1) { // 1 = DM channel type in Discord.js
+          await message.author.send(msg);
+        } else {
+          await message.reply(msg);
+        }
         console.log(`Message sent: ${msg}`);
       } else {
         const chunks = chunkText(msg, 1900);
-        await message.reply(chunks[0]);
-        
+        // For DMs, send directly instead of replying (avoids routing issues)
+        if (message.channel.type === 1) { // 1 = DM channel type in Discord.js
+          await message.author.send(chunks[0]);
+        } else {
+          await message.reply(chunks[0]);
+        }
+
         for (let i = 1; i < chunks.length; i++) {
           await new Promise(r => setTimeout(r, 200));
           await message.channel.send(chunks[i]);
         }
-        
+
         console.log(`Message sent in ${chunks.length} chunks.`);
       }
     }
@@ -782,21 +792,11 @@ client.on('messageCreate', async (message) => {
 
       // 📦 CHUNKING: Split long messages to avoid Discord's 2000 char limit
       if (msg.length <= 1900) {
-        // For DMs, send directly instead of replying (avoids routing issues)
-        if (message.channel.type === 1) { // 1 = DM channel type in Discord.js
-          await message.author.send(msg);
-        } else {
-          await message.reply(msg);
-        }
+        await message.reply(msg);
         console.log(`📨 Message sent: ${msg.substring(0, 100)}...`);
       } else {
         const chunks = chunkText(msg, 1900);
-        // For DMs, send directly instead of replying (avoids routing issues)
-        if (message.channel.type === 1) { // 1 = DM channel type in Discord.js
-          await message.author.send(chunks[0]);
-        } else {
-          await message.reply(chunks[0]);
-        }
+        await message.reply(chunks[0]);
 
         for (let i = 1; i < chunks.length; i++) {
           await new Promise(r => setTimeout(r, 200));
