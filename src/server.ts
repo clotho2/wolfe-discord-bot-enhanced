@@ -782,11 +782,21 @@ client.on('messageCreate', async (message) => {
 
       // 📦 CHUNKING: Split long messages to avoid Discord's 2000 char limit
       if (msg.length <= 1900) {
-        await message.reply(msg);
+        // For DMs, send directly instead of replying (avoids routing issues)
+        if (message.channel.type === 1) { // 1 = DM channel type in Discord.js
+          await message.author.send(msg);
+        } else {
+          await message.reply(msg);
+        }
         console.log(`📨 Message sent: ${msg.substring(0, 100)}...`);
       } else {
         const chunks = chunkText(msg, 1900);
-        await message.reply(chunks[0]);
+        // For DMs, send directly instead of replying (avoids routing issues)
+        if (message.channel.type === 1) { // 1 = DM channel type in Discord.js
+          await message.author.send(chunks[0]);
+        } else {
+          await message.reply(chunks[0]);
+        }
 
         for (let i = 1; i < chunks.length; i++) {
           await new Promise(r => setTimeout(r, 200));
