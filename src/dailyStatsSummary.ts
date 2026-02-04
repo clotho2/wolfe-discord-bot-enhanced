@@ -81,7 +81,7 @@ export function startDailyStatsSummaryScheduler(client: Client): void {
   }
 
   dailyStatsScheduled = true;
-  const TIMEZONE = process.env.TIMEZONE || 'Europe/Berlin';
+  const TIMEZONE = process.env.TIMEZONE || 'America/New_York';
   console.log(`📅 Daily stats summary scheduler started (runs at 0:00 ${TIMEZONE})`);
 
   function scheduleNextMidnight() {

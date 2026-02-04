@@ -373,7 +373,7 @@ export function startDailySummaryScheduler(client: Client): void {
   }
 
   dailySummaryScheduled = true;
-  const TIMEZONE = process.env.TIMEZONE || 'Europe/Berlin';
+  const TIMEZONE = process.env.TIMEZONE || 'America/New_York';
   console.log(`📅 Daily summary scheduler started (runs at 0:00 ${TIMEZONE})`);
 
   function scheduleNextMidnight() {
