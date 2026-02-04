@@ -96,7 +96,7 @@ let flushInterval: NodeJS.Timeout | null = null;
  * Get current date in YYYY-MM-DD format (configured timezone)
  */
 function getCurrentDate(): string {
-  const TIMEZONE = process.env.TIMEZONE || 'Europe/Berlin';
+  const TIMEZONE = process.env.TIMEZONE || 'America/New_York';
   const now = new Date();
   // Get date in configured timezone
   const tzTime = new Date(now.toLocaleString('en-US', { timeZone: TIMEZONE }));

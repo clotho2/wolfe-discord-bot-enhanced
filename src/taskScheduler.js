@@ -10,7 +10,7 @@ const DISCORD_TOKEN = process.env.DISCORD_TOKEN || '';
 const TASKS_CHANNEL_ID = process.env.TASKS_CHANNEL_ID || '';
 const DISCORD_CHANNEL_ID = process.env.DISCORD_CHANNEL_ID || ''; // Default channel for task responses
 const HEARTBEAT_LOG_CHANNEL_ID = process.env.HEARTBEAT_LOG_CHANNEL_ID; // Heartbeat log channel for self_tasks
-const TIMEZONE = process.env.TIMEZONE || 'Europe/Berlin';
+const TIMEZONE = process.env.TIMEZONE || 'America/New_York';
 async function readTasksFromChannel() {
     try {
         if (!DISCORD_TOKEN || !TASKS_CHANNEL_ID)
@@ -94,11 +94,11 @@ function parseTimeInBerlinThenUTC(timeStr, referenceDate) {
     }).formatToParts(testUTC);
     let testHour = parseInt(testBerlin.find(p => p.type === 'hour')?.value || '0', 10);
     let testMin = parseInt(testBerlin.find(p => p.type === 'minute')?.value || '0', 10);
-    // If it doesn't match, try UTC+2 (CEST - summer time)
+    // If it doesn't match, try different UTC offset (for DST handling)
     if (testHour !== hour || testMin !== minute) {
         testUTC = new Date(`${berlinISO}+02:00`);
         testBerlin = new Intl.DateTimeFormat('en-US', {
-            timeZone: 'Europe/Berlin',
+            timeZone: TIMEZONE,
             hour: '2-digit',
             minute: '2-digit',
             hour12: false
