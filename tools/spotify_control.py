@@ -18,57 +18,10 @@ from typing import Optional, Dict, Any, List
 
 SPOTIFY_API_BASE = "https://api.spotify.com/v1"
 
-# Common .env file locations to search as fallback
-_ENV_FILE_PATHS = [
-    "/opt/aicara/wolfe-discord-bot-enhanced/.env",
-    os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), ".env"),
-]
-
-
-def _parse_env_file() -> Dict[str, str]:
-    """Parse .env file and return dict of SPOTIFY_* variables.
-
-    Used as fallback when os.getenv() doesn't find credentials
-    (e.g. when running in a separate service/sandbox that doesn't
-    inherit the Discord bot's environment).
-    """
-    result = {}
-    for env_path in _ENV_FILE_PATHS:
-        try:
-            with open(env_path, "r") as f:
-                for line in f:
-                    line = line.strip()
-                    if not line or line.startswith("#"):
-                        continue
-                    if "=" not in line:
-                        continue
-                    key, _, value = line.partition("=")
-                    key = key.strip()
-                    value = value.strip().strip('"').strip("'")
-                    if key.startswith("SPOTIFY_"):
-                        result[key] = value
-            if result:
-                return result
-        except (OSError, IOError):
-            continue
-    return result
-
-
-def _get_credential(name: str) -> str:
-    """Get a credential from env vars, falling back to .env file parsing."""
-    value = os.getenv(name, "")
-    if value:
-        return value
-    # Fallback: parse .env file directly (handles cases where this tool
-    # runs in a process/sandbox without the host's environment variables)
-    env_vars = _parse_env_file()
-    return env_vars.get(name, "")
-
-
-# Load Spotify credentials from environment variables (with .env file fallback)
-SPOTIFY_CLIENT_ID = _get_credential("SPOTIFY_CLIENT_ID")
-SPOTIFY_CLIENT_SECRET = _get_credential("SPOTIFY_CLIENT_SECRET")
-SPOTIFY_REFRESH_TOKEN = _get_credential("SPOTIFY_REFRESH_TOKEN")
+# Load Spotify credentials from environment variables
+SPOTIFY_CLIENT_ID = os.getenv("SPOTIFY_CLIENT_ID", "")
+SPOTIFY_CLIENT_SECRET = os.getenv("SPOTIFY_CLIENT_SECRET", "")
+SPOTIFY_REFRESH_TOKEN = os.getenv("SPOTIFY_REFRESH_TOKEN", "")
 
 # In-memory token cache (since we can't write to filesystem in Letta cloud)
 _token_cache = {
@@ -83,18 +36,7 @@ _token_cache = {
 def load_spotify_config() -> Dict[str, Any]:
     """Load Spotify configuration"""
     if not SPOTIFY_CLIENT_ID or not SPOTIFY_CLIENT_SECRET or not SPOTIFY_REFRESH_TOKEN:
-        missing = []
-        if not SPOTIFY_CLIENT_ID:
-            missing.append("SPOTIFY_CLIENT_ID")
-        if not SPOTIFY_CLIENT_SECRET:
-            missing.append("SPOTIFY_CLIENT_SECRET")
-        if not SPOTIFY_REFRESH_TOKEN:
-            missing.append("SPOTIFY_REFRESH_TOKEN")
-        searched = ", ".join(_ENV_FILE_PATHS)
-        raise Exception(
-            f"Missing Spotify credentials: {', '.join(missing)}. "
-            f"Checked os.environ and .env files: {searched}"
-        )
+        raise Exception("Missing Spotify credentials!")
     
     return {
         "clientId": SPOTIFY_CLIENT_ID,
