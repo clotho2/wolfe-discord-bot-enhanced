@@ -697,12 +697,13 @@ async function forwardImagesToGrok(
 
             // Use done.response as authoritative final response (backend fix ensures it's populated)
             if (chunk.data?.response && typeof chunk.data.response === 'string' && chunk.data.response.trim()) {
-              doneResponse = chunk.data.response;
-              console.log(`📋 [DONE] Authoritative response available (${doneResponse.length} chars)`);
+              const finalResponse = chunk.data.response;
+              doneResponse = finalResponse;
+              console.log(`📋 [DONE] Authoritative response available (${finalResponse.length} chars)`);
               // Override accumulated content with authoritative response
-              if (doneResponse !== text2) {
+              if (finalResponse !== text2) {
                 console.log(`📋 [DONE] Using done.response over accumulated content (${text2.length} chars)`);
-                text2 = doneResponse;
+                text2 = finalResponse;
               }
             }
 
