@@ -322,9 +322,9 @@ async function triggerLetta(
       }
     }
 
-    // Send task to Grok via messages.ts infrastructure
-    const taskPrompt = typeof task === 'string' ? task : (task as any).content || (task as any).task || taskName;
-    const taskResponse = await sendTaskMessage(taskName, taskPrompt);
+    // Send task to Grok via messages.ts infrastructure (streaming)
+    const taskDescription = task.description || '';
+    const taskResponse = await sendTaskMessage(taskName, taskDescription, task.action_type, task.action_target);
     
     // 🔧 FIX: Check if we got a response from Letta
     if (!taskResponse || taskResponse.trim() === "") {
