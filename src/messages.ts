@@ -217,6 +217,11 @@ async function sendMessage(
         const content = typeof chunk.data === 'string' ? chunk.data : (chunk.data.chunk || chunk.data.content || '');
         console.log(`💬 [CONTENT] ${content.substring(0, 100)}...`);
         agentMessageResponse += content;
+      } else if (chunk.event === 'content_reset') {
+        // Backend discovered streamed content was <tool_call> XML, not real content
+        const reason = chunk.data?.reason || 'unknown';
+        console.log(`🔄 [CONTENT RESET] Clearing ${agentMessageResponse.length} chars of accumulated content (reason: ${reason})`);
+        agentMessageResponse = '';
       } else if (chunk.event === 'tool_call' && chunk.data) {
         const toolName = chunk.data.name || 'unknown';
         const toolArgs = chunk.data.arguments || {};
@@ -227,10 +232,28 @@ async function sendMessage(
         });
       } else if (chunk.event === 'done') {
         console.log(`✅ [STREAM DONE] Total content: ${agentMessageResponse.length} chars`);
+        // Use done.response as authoritative final response (backend fix ensures it's populated)
+        if (chunk.data?.response && typeof chunk.data.response === 'string' && chunk.data.response.trim()) {
+          const doneResponse = chunk.data.response;
+          if (doneResponse !== agentMessageResponse) {
+            console.log(`📋 [DONE] Using authoritative done.response (${doneResponse.length} chars) over accumulated content (${agentMessageResponse.length} chars)`);
+            agentMessageResponse = doneResponse;
+          }
+        }
         if (chunk.data && chunk.data.tokens) {
           tokens = chunk.data.tokens;
           const t = chunk.data.tokens;
           console.log(`📊 Tokens: ${t.prompt} prompt + ${t.completion} completion = ${t.total} total`);
+        }
+        // Also check for usage at top level (new done event format)
+        if (chunk.data?.usage) {
+          const u = chunk.data.usage;
+          tokens = {
+            prompt: u.prompt_tokens || 0,
+            completion: u.completion_tokens || 0,
+            total: u.total_tokens || 0,
+          };
+          console.log(`📊 Usage: ${tokens.prompt} prompt + ${tokens.completion} completion = ${tokens.total} total`);
         }
       }
     }

@@ -649,6 +649,8 @@ async function forwardImagesToGrok(
       // ✅ Call Grok API with STREAMING for real-time responses
       let text2 = '';
       let hasSentContent = false;
+      let contentWasReset = false;
+      let doneResponse: string | null = null;
 
       try {
         for await (const chunk of grokClient.chatStream({
@@ -671,6 +673,15 @@ async function forwardImagesToGrok(
               await discordMessage.channel.send(content);
               hasSentContent = true;
             }
+          } else if (chunk.event === 'content_reset') {
+            // Backend discovered streamed content was <tool_call> XML, not real content
+            const reason = chunk.data?.reason || 'unknown';
+            console.log(`🔄 [CONTENT RESET] Clearing ${text2.length} chars of accumulated content (reason: ${reason})`);
+            if (hasSentContent) {
+              console.warn(`🔄 ⚠️ Content was already streamed to Discord before reset - will send corrected response from done event`);
+              contentWasReset = true;
+            }
+            text2 = '';
           } else if (chunk.event === 'tool_call' && chunk.data) {
             const toolName = chunk.data.name || 'unknown';
             const toolArgs = chunk.data.arguments || {};
@@ -684,10 +695,26 @@ async function forwardImagesToGrok(
           } else if (chunk.event === 'done') {
             console.log(`✅ [STREAM DONE] Total content: ${text2.length} chars`);
 
+            // Use done.response as authoritative final response (backend fix ensures it's populated)
+            if (chunk.data?.response && typeof chunk.data.response === 'string' && chunk.data.response.trim()) {
+              doneResponse = chunk.data.response;
+              console.log(`📋 [DONE] Authoritative response available (${doneResponse.length} chars)`);
+              // Override accumulated content with authoritative response
+              if (doneResponse !== text2) {
+                console.log(`📋 [DONE] Using done.response over accumulated content (${text2.length} chars)`);
+                text2 = doneResponse;
+              }
+            }
+
             // Log token usage if available
             if (chunk.data && chunk.data.tokens) {
               const tokens = chunk.data.tokens;
               console.log(`📊 Tokens: ${tokens.prompt} prompt + ${tokens.completion} completion = ${tokens.total} total`);
+            }
+            // Also check for usage at top level (new done event format)
+            if (chunk.data?.usage) {
+              const u = chunk.data.usage;
+              console.log(`📊 Usage: ${u.prompt_tokens || 0} prompt + ${u.completion_tokens || 0} completion = ${u.total_tokens || 0} total`);
             }
           }
         }
@@ -707,6 +734,21 @@ async function forwardImagesToGrok(
             throw new Error('Stream failed with no response collected');
           }
         }
+      }
+
+      // If content was reset after being streamed to Discord, send the corrected response
+      if (contentWasReset && doneResponse && discordMessage) {
+        console.log(`🔄 [CONTENT RESET RECOVERY] Sending corrected response (${doneResponse.length} chars) after content reset`);
+        try {
+          // Chunk for Discord's 2000-char limit
+          const chunks = doneResponse.match(/[\s\S]{1,1990}/g) || [];
+          for (const c of chunks) {
+            await discordMessage.channel.send(c);
+          }
+        } catch (sendErr) {
+          console.error(`❌ Failed to send corrected response after content reset:`, sendErr);
+        }
+        return "";
       }
 
       // If we already sent content via streaming, return empty to avoid duplicate
