@@ -54,7 +54,7 @@ export interface GrokChatResponse {
 }
 
 export interface GrokStreamChunk {
-  event: 'thinking' | 'content' | 'tool_call' | 'done';
+  event: 'thinking' | 'content' | 'content_reset' | 'tool_call' | 'done';
   data: any;
 }
 

@@ -217,6 +217,11 @@ async function sendMessage(
         const content = typeof chunk.data === 'string' ? chunk.data : (chunk.data.chunk || chunk.data.content || '');
         console.log(`💬 [CONTENT] ${content.substring(0, 100)}...`);
         agentMessageResponse += content;
+      } else if (chunk.event === 'content_reset') {
+        // Backend discovered streamed content was <tool_call> XML, not real content
+        const reason = chunk.data?.reason || 'unknown';
+        console.log(`🔄 [CONTENT RESET] Clearing ${agentMessageResponse.length} chars of accumulated content (reason: ${reason})`);
+        agentMessageResponse = '';
       } else if (chunk.event === 'tool_call' && chunk.data) {
         const toolName = chunk.data.name || 'unknown';
         const toolArgs = chunk.data.arguments || {};
@@ -227,10 +232,28 @@ async function sendMessage(
         });
       } else if (chunk.event === 'done') {
         console.log(`✅ [STREAM DONE] Total content: ${agentMessageResponse.length} chars`);
+        // Use done.response as authoritative final response (backend fix ensures it's populated)
+        if (chunk.data?.response && typeof chunk.data.response === 'string' && chunk.data.response.trim()) {
+          const doneResponse = chunk.data.response;
+          if (doneResponse !== agentMessageResponse) {
+            console.log(`📋 [DONE] Using authoritative done.response (${doneResponse.length} chars) over accumulated content (${agentMessageResponse.length} chars)`);
+            agentMessageResponse = doneResponse;
+          }
+        }
         if (chunk.data && chunk.data.tokens) {
           tokens = chunk.data.tokens;
           const t = chunk.data.tokens;
           console.log(`📊 Tokens: ${t.prompt} prompt + ${t.completion} completion = ${t.total} total`);
+        }
+        // Also check for usage at top level (new done event format)
+        if (chunk.data?.usage) {
+          const u = chunk.data.usage;
+          tokens = {
+            prompt: u.prompt_tokens || 0,
+            completion: u.completion_tokens || 0,
+            total: u.total_tokens || 0,
+          };
+          console.log(`📊 Usage: ${tokens.prompt} prompt + ${tokens.completion} completion = ${tokens.total} total`);
         }
       }
     }
@@ -469,34 +492,107 @@ ${conversationContext}`;
 }
 
 /**
- * Send a scheduled task message to Grok
+ * Send a scheduled task message to Grok via streaming endpoint
+ * Uses the same streaming infrastructure as user messages to ensure
+ * the full consciousness loop runs (tool execution, memory, etc.)
  */
-async function sendTaskMessage(taskName: string, taskPrompt: string): Promise<string> {
+async function sendTaskMessage(
+  taskName: string,
+  taskDescription: string,
+  actionType?: string,
+  actionTarget?: string,
+): Promise<string> {
   console.log(`📅 Executing scheduled task: ${taskName}`);
 
   try {
     // Log task execution
-    logTask(taskName, 'scheduled_task', taskPrompt, undefined, undefined);
+    logTask(taskName, 'scheduled_task', taskDescription || taskName, undefined, undefined);
 
-    // Create task request
+    // Generate current timestamp in configured timezone
+    const now = new Date();
+    const currentTimeStr = now.toLocaleString(LOCALE, {
+      timeZone: TIMEZONE,
+      weekday: 'long',
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: false
+    });
+
+    // Build action context
+    let actionContext = '';
+    if (actionType === 'user_reminder') {
+      actionContext = `\n**Delivery:** This is a user reminder — your response will be sent as a DM to the user.`;
+    } else if (actionType === 'channel_post') {
+      actionContext = `\n**Delivery:** This is a channel post — your response will be posted to the designated channel.`;
+    } else if (actionType === 'self_task') {
+      actionContext = `\n**Delivery:** This is an autonomous self-task — perform the task using your tools and respond with any results or notes.`;
+    }
+
+    // Build rich task prompt
+    const taskContent = `# Scheduled Task: ${taskName}
+
+**Current Date & Time:** ${currentTimeStr}
+**Task:** ${taskName}
+${taskDescription ? `**Description:** ${taskDescription}` : ''}
+${actionContext}
+
+This is a scheduled task that has been triggered. Please execute it now. Use your tools as needed (memory search, archival storage, web search, etc.) to complete the task thoroughly.
+
+Your text response is what will be delivered to Discord.`;
+
+    // Create streaming task request
     const request: GrokChatRequest = {
       messages: [{
-        role: "user",
-        content: `[SCHEDULED TASK: ${taskName}] ${taskPrompt}`
+        role: "system",
+        content: taskContent
       }],
       session_id: GROK_SESSION_ID,
       message_type: 'task',
-      max_tokens: GROK_MAX_TOKENS,  // Explicitly set max tokens
+      max_tokens: GROK_MAX_TOKENS,
     };
 
-    const response = await grokClient.chat(request);
-    const taskResponse = response.message?.content || '';
+    console.log(`📅 Task request: streaming to ${GROK_BASE_URL}, session=${GROK_SESSION_ID}, max_tokens=${GROK_MAX_TOKENS}`);
+
+    // Use streaming to go through the full consciousness loop
+    let taskResponse = '';
+
+    for await (const chunk of grokClient.chatStream(request)) {
+      if (chunk.event === 'content' && chunk.data) {
+        const content = typeof chunk.data === 'string' ? chunk.data : (chunk.data.chunk || chunk.data.content || '');
+        taskResponse += content;
+      } else if (chunk.event === 'content_reset') {
+        const reason = chunk.data?.reason || 'unknown';
+        console.log(`📅 🔄 [CONTENT RESET] Clearing ${taskResponse.length} chars (reason: ${reason})`);
+        taskResponse = '';
+      } else if (chunk.event === 'tool_call' && chunk.data) {
+        const toolName = chunk.data.name || 'unknown';
+        console.log(`📅 🔧 [TOOL CALL] ${toolName}`);
+      } else if (chunk.event === 'done') {
+        // Use done.response as authoritative final response
+        if (chunk.data?.response && typeof chunk.data.response === 'string' && chunk.data.response.trim()) {
+          const doneResponse = chunk.data.response;
+          if (doneResponse !== taskResponse) {
+            console.log(`📅 📋 Using authoritative done.response (${doneResponse.length} chars) over accumulated (${taskResponse.length} chars)`);
+            taskResponse = doneResponse;
+          }
+        }
+        if (chunk.data?.usage) {
+          const u = chunk.data.usage;
+          console.log(`📅 📊 Usage: ${u.prompt_tokens || 0} prompt + ${u.completion_tokens || 0} completion = ${u.total_tokens || 0} total`);
+        } else if (chunk.data?.tokens) {
+          const t = chunk.data.tokens;
+          console.log(`📅 📊 Tokens: ${t.prompt} prompt + ${t.completion} completion = ${t.total} total`);
+        }
+      }
+    }
 
     if (taskResponse && taskResponse.trim()) {
       // Log task response
       logTaskResponse(taskResponse, taskName, undefined, undefined);
-
-      console.log(`📅 Task completed: ${taskName}`);
+      console.log(`📅 ✅ Task completed: ${taskName} (${taskResponse.length} chars)`);
       return taskResponse;
     }
 
